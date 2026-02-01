@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام إدارة العقارات - Sumo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#"><i class="bi bi-house-door"></i> نظام إدارة العقارات</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" data-section="houses"><i class="bi bi-building"></i> دور الشركة</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-section="receipts"><i class="bi bi-receipt"></i> إصدار الوصولات</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-section="contracts"><i class="bi bi-file-earmark-text"></i> موقف العقود</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-section="analytics"><i class="bi bi-graph-up"></i> تحليل البيانات</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-section="resale"><i class="bi bi-arrow-repeat"></i> إعادة البيع</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-section="debts"><i class="bi bi-exclamation-triangle"></i> الديون المتأخرة</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <!-- قسم دور الشركة -->
+        <div id="houses-section" class="content-section">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4><i class="bi bi-building"></i> دور الشركة المتوفرة</h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addHouseModal">
+                            <i class="bi bi-plus-circle"></i> إضافة دار جديدة
+                        </button>
+                        <button class="btn btn-info ms-2" onclick="addTestHouses(100)" title="إضافة 100 منزل للاختبار">
+                            <i class="bi bi-database-add"></i> إضافة 100 منزل للاختبار
+                        </button>
+                        <div class="btn-group ms-2" role="group">
+                            <button type="button" class="btn btn-outline-primary filter-phase" data-phase="all">الكل</button>
+                            <button type="button" class="btn btn-outline-primary filter-phase" data-phase="1">المرحلة الأولى</button>
+                            <button type="button" class="btn btn-outline-primary filter-phase" data-phase="2">المرحلة الثانية</button>
+                            <button type="button" class="btn btn-outline-primary filter-phase" data-phase="3">المرحلة الثالثة</button>
+                            <button type="button" class="btn btn-outline-primary filter-phase" data-phase="4">المرحلة الرابعة</button>
+                            <button type="button" class="btn btn-outline-primary filter-phase" data-phase="5">المرحلة الخامسة</button>
+                        </div>
+                    </div>
+                    <div class="table-responsive" style="max-height: 70vh; overflow-y: auto;">
+                        <table class="table table-striped table-hover" id="housesTable">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>ت</th>
+                                    <th>رقم الدار</th>
+                                    <th>رقم البلوك</th>
+                                    <th>المساحة الكلية (م²)</th>
+                                    <th>مساحة البناء (م²)</th>
+                                    <th>السعر الكلي</th>
+                                    <th>المقدمة</th>
+                                    <th>القرض</th>
+                                    <th>المرحلة</th>
+                                    <th>التطلوعة</th>
+                                    <th>مواصفات إضافية</th>
+                                    <th>الحالة</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="housesTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- قسم إصدار الوصولات -->
+        <div id="receipts-section" class="content-section d-none">
+            <div class="row">
+                <!-- نموذج إصدار الوصل -->
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-header bg-success text-white">
+                            <h4 class="mb-0"><i class="bi bi-receipt"></i> إصدار وصل قبض مؤقت</h4>
+                        </div>
+                        <div class="card-body">
+                            <form id="receiptForm">
+                                <!-- معلومات الوصل الأساسية -->
+                                <div class="card mb-3" style="background: #f8f9fa;">
+                                    <div class="card-body">
+                                        <h6 class="mb-3"><i class="bi bi-info-circle"></i> معلومات الوصل</h6>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label"><i class="bi bi-hash"></i> رقم الوصل</label>
+                                                    <input type="number" class="form-control" id="receiptNumber" required>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label"><i class="bi bi-calendar"></i> التاريخ</label>
+                                                    <input type="date" class="form-control" id="receiptDate" required>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- معلومات المشتري -->
+                                <div class="card mb-3" style="background: #f8f9fa;">
+                                    <div class="card-body">
+                                        <h6 class="mb-3"><i class="bi bi-person"></i> معلومات المشتري</h6>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label"><i class="bi bi-person-badge"></i> اسم المشتري</label>
+                                                    <input type="text" class="form-control" id="buyerName" required>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label"><i class="bi bi-phone"></i> رقم الموبايل</label>
+                                                    <input type="tel" class="form-control" id="mobileNumber" required>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- معلومات الوحدة السكنية -->
+                                <div class="card mb-3" style="background: #f8f9fa;">
+                                    <div class="card-body">
+                                        <h6 class="mb-3"><i class="bi bi-house"></i> معلومات الوحدة السكنية</h6>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label"><i class="bi bi-building"></i> رقم الوحدة السكنية</label>
+                                                    <select class="form-select" id="unitNumber" required>
+                                                        <option value="">اختر الوحدة</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="mb-3">
+                                                    <label class="form-label"><i class="bi bi-grid"></i> رقم البلوك</label>
+                                                    <input type="number" class="form-control" id="blockNumber" required readonly>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="mb-3">
+                                                    <label class="form-label"><i class="bi bi-rulers"></i> المساحة (م²)</label>
+                                                    <input type="number" class="form-control" id="unitArea" required readonly>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="alert alert-info mb-0" id="houseInfo" style="display: none;">
+                                            <i class="bi bi-info-circle"></i> <span id="houseInfoText"></span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- المعلومات المالية -->
+                                <div class="card mb-3" style="background: #f8f9fa;">
+                                    <div class="card-body">
+                                        <h6 class="mb-3"><i class="bi bi-cash-coin"></i> المعلومات المالية</h6>
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div class="mb-3">
+                                                    <label class="form-label"><i class="bi bi-currency-dollar"></i> السعر الكلي</label>
+                                                    <input type="number" class="form-control" id="totalPrice" readonly>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="mb-3">
+                                                    <label class="form-label"><i class="bi bi-cash-stack"></i> المبلغ المستلم</label>
+                                                    <input type="number" class="form-control" id="amountReceived" required step="0.01">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="mb-3">
+                                                    <label class="form-label"><i class="bi bi-calculator"></i> المبلغ المتبقي</label>
+                                                    <input type="number" class="form-control" id="remainingAmount" required readonly style="font-weight: bold; color: #dc3545;">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="form-label"><i class="bi bi-calendar-event"></i> تاريخ استحقاق المبلغ المتبقي</label>
+                                                    <input type="date" class="form-control" id="dueDate">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- ملاحظات -->
+                                <div class="card mb-3" style="background: #f8f9fa;">
+                                    <div class="card-body">
+                                        <h6 class="mb-3"><i class="bi bi-sticky"></i> ملاحظات</h6>
+                                        <div class="mb-3">
+                                            <textarea class="form-control" id="notes" rows="3" placeholder="أضف أي ملاحظات إضافية..."></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- أزرار الإجراءات -->
+                                <div class="d-flex gap-2 justify-content-end">
+                                    <button type="button" class="btn btn-secondary" onclick="resetReceiptForm()">
+                                        <i class="bi bi-arrow-counterclockwise"></i> إعادة تعيين
+                                    </button>
+                                    <button type="button" class="btn btn-info" onclick="printReceipt()">
+                                        <i class="bi bi-printer"></i> معاينة وطباعة
+                                    </button>
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="bi bi-save"></i> حفظ الوصل
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- لوحة معلومات سريعة -->
+                <div class="col-lg-4">
+                    <div class="card mb-3">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0"><i class="bi bi-info-circle"></i> معلومات سريعة</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <small class="text-muted">إجمالي الوصولات</small>
+                                <h5 id="totalReceiptsCount">0</h5>
+                            </div>
+                            <div class="mb-3">
+                                <small class="text-muted">إجمالي المبالغ المستلمة</small>
+                                <h5 id="totalReceiptsAmount">0 دينار</h5>
+                            </div>
+                            <hr>
+                            <div class="alert alert-warning mb-0">
+                                <small><i class="bi bi-exclamation-triangle"></i> عند حفظ الوصل سيتم إنشاء عقد تلقائياً في موقف العقود</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-4">
+                <div class="card-header bg-info text-white">
+                    <h5>قائمة الوصولات</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive" style="max-height: 70vh; overflow-y: auto;">
+                        <table class="table table-striped" id="receiptsListTable">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>ت</th>
+                                    <th>رقم الوصل</th>
+                                    <th>التاريخ</th>
+                                    <th>اسم المشتري</th>
+                                    <th>رقم الموبايل</th>
+                                    <th>رقم الوحدة</th>
+                                    <th>المبلغ</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="receiptsListBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- قسم موقف العقود -->
+        <div id="contracts-section" class="content-section d-none">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h4><i class="bi bi-file-earmark-text"></i> موقف العقود</h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addContractModal">
+                            <i class="bi bi-plus-circle"></i> إضافة عقد جديد
+                        </button>
+                    </div>
+                    <div class="table-responsive" style="max-height: 70vh; overflow-y: auto;">
+                        <table class="table table-striped table-hover" id="contractsTable">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>ت</th>
+                                    <th>تاريخ البيع</th>
+                                    <th>رقم الدار</th>
+                                    <th>رقم البلوك</th>
+                                    <th>المساحة (م²)</th>
+                                    <th>عدد الطوابق</th>
+                                    <th>اسم المشتري</th>
+                                    <th>رقم الموبايل</th>
+                                    <th>نوع البيع</th>
+                                    <th>المبلغ الكلي</th>
+                                    <th>مبلغ المقدمة</th>
+                                    <th>مبلغ القرض</th>
+                                    <th>المبلغ المدفوع</th>
+                                    <th>المبلغ المتبقي</th>
+                                    <th>تاريخ التعاقد</th>
+                                    <th>رقم العقد</th>
+                                    <th>توقيع المشتري</th>
+                                    <th>توقيع المستثمر</th>
+                                    <th>استلام العقد</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="contractsTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- قسم تحليل البيانات -->
+        <div id="analytics-section" class="content-section d-none">
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <div class="card text-white bg-primary">
+                        <div class="card-body">
+                            <h5 class="card-title">إجمالي المنازل المباعة</h5>
+                            <h2 id="totalSoldHouses">0</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card text-white bg-success">
+                        <div class="card-body">
+                            <h5 class="card-title">المنازل المباعة هذا الشهر</h5>
+                            <h2 id="monthlySoldHouses">0</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card text-white bg-info">
+                        <div class="card-body">
+                            <h5 class="card-title">إجمالي الإيرادات</h5>
+                            <h2 id="totalRevenue">0</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card text-white bg-warning">
+                        <div class="card-body">
+                            <h5 class="card-title">إيرادات هذا الشهر</h5>
+                            <h2 id="monthlyRevenue">0</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <div class="card text-white bg-danger">
+                        <div class="card-body">
+                            <h5 class="card-title">مجموع الديون</h5>
+                            <h2 id="totalDebts">0</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>نسبة المبيعات حسب المرحلة</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="phaseChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>المبيعات الشهرية</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="monthlyChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- قسم الديون المتأخرة -->
+        <div id="debts-section" class="content-section d-none">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h4><i class="bi bi-exclamation-triangle"></i> الديون المتأخرة</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                <input type="text" class="form-control" id="debtSearchInput" placeholder="ابحث عن زبون (الاسم أو رقم الموبايل أو رقم الدار)" onkeyup="if(event.key==='Enter') searchDebts()">
+                                <button class="btn btn-primary" onclick="searchDebts()">
+                                    <i class="bi bi-search"></i> بحث
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <button class="btn btn-secondary" onclick="loadDebts()">
+                                <i class="bi bi-arrow-clockwise"></i> تحديث
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-responsive" style="max-height: 70vh; overflow-y: auto;">
+                        <table class="table table-striped table-hover" id="debtsTable">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>ت</th>
+                                    <th>اسم المشتري</th>
+                                    <th>رقم الموبايل</th>
+                                    <th>رقم الدار</th>
+                                    <th>رقم البلوك</th>
+                                    <th>المبلغ الكلي</th>
+                                    <th>المبلغ المدفوع</th>
+                                    <th>المبلغ المتبقي</th>
+                                    <th>موعد الدفعة القادمة</th>
+                                    <th>أيام التأخير</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="debtsTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- قسم إعادة البيع -->
+        <div id="resale-section" class="content-section d-none">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h4><i class="bi bi-arrow-repeat"></i> إعادة البيع</h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addResaleModal">
+                            <i class="bi bi-plus-circle"></i> إضافة دار لإعادة البيع
+                        </button>
+                    </div>
+                    <div class="table-responsive" style="max-height: 70vh; overflow-y: auto;">
+                        <table class="table table-striped table-hover" id="resaleTable">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>ت</th>
+                                    <th>رقم الدار</th>
+                                    <th>رقم البلوك</th>
+                                    <th>المرحلة</th>
+                                    <th>عدد الطوابق</th>
+                                   
+                                    <th>المساحة (م²)</th>
+                                    <th>السعر الكلي</th>
+                                    <th>القرض</th>
+                                    <th>المبلغ المطلوب</th>
+                                    <th>المصدر</th>
+                                    <th>رقم الموبايل</th>
+                                    <th>تاريخ العرض</th>
+                                    <th>مواصفات إضافية</th>
+                                    <th>الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="resaleTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal إضافة دار جديدة -->
+    <div class="modal fade" id="addHouseModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">إضافة دار جديدة</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addHouseForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">رقم الدار</label>
+                                    <input type="number" class="form-control" id="houseNumber" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">رقم البلوك</label>
+                                    <input type="number" class="form-control" id="houseBlock" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">المساحة الكلية (م²)</label>
+                                    <input type="number" class="form-control" id="totalArea" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">مساحة البناء (م²)</label>
+                                    <input type="number" class="form-control" id="buildingArea" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">السعر الكلي</label>
+                                    <input type="number" class="form-control" id="totalPrice" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">المقدمة</label>
+                                    <input type="number" class="form-control" id="downPayment">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">القرض</label>
+                                    <input type="number" class="form-control" id="loanAmount">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">المرحلة</label>
+                                    <select class="form-select" id="phase" required>
+                                        <option value="1">المرحلة الأولى</option>
+                                        <option value="2">المرحلة الثانية</option>
+                                        <option value="3">المرحلة الثالثة</option>
+                                        <option value="4">المرحلة الرابعة</option>
+                                        <option value="5">المرحلة الخامسة</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">التطلوعة (مبلغ مالي)</label>
+                                    <input type="number" class="form-control" id="outlook" step="0.01" min="0">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">مواصفات إضافية</label>
+                                    <textarea class="form-control" id="additionalSpecs" rows="3"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="button" class="btn btn-primary" onclick="saveHouse()">حفظ</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal إضافة عقد -->
+    <div class="modal fade" id="addContractModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">إضافة عقد جديد</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addContractForm">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">تاريخ البيع</label>
+                                    <input type="date" class="form-control" id="saleDate" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">رقم الدار</label>
+                                    <select class="form-select" id="contractHouseNumber" required>
+                                        <option value="">اختر الدار</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">رقم البلوك</label>
+                                    <input type="number" class="form-control" id="contractBlock" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">المساحة (م²)</label>
+                                    <input type="number" class="form-control" id="contractArea" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">عدد الطوابق</label>
+                                    <input type="number" class="form-control" id="floors" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">اسم المشتري</label>
+                                    <input type="text" class="form-control" id="contractBuyerName" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">رقم الموبايل</label>
+                                    <input type="tel" class="form-control" id="contractMobile" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">نوع البيع</label>
+                                    <select class="form-select" id="saleType" required>
+                                        <option value="بيع أول مرة">بيع أول مرة</option>
+                                        <option value="إعادة بيع">إعادة بيع</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">المبلغ الكلي للدار</label>
+                                    <input type="number" class="form-control" id="contractTotalAmount" required readonly>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">مبلغ المقدمة</label>
+                                    <input type="number" class="form-control" id="contractDownPayment" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">مبلغ القرض</label>
+                                    <input type="number" class="form-control" id="contractLoan" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">المبلغ المدفوع</label>
+                                    <input type="number" class="form-control" id="amountPaid" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">المبلغ المتبقي</label>
+                                    <input type="number" class="form-control" id="remainingAmount" readonly>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">تاريخ التعاقد</label>
+                                    <input type="date" class="form-control" id="contractDate" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">رقم العقد</label>
+                                    <input type="number" class="form-control" id="contractNumber" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">توقيع المشتري</label>
+                                    <select class="form-select" id="buyerSignature">
+                                        <option value="بالانتظار" selected>بالانتظار</option>
+                                        <option value="تم">تم</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">توقيع المستثمر</label>
+                                    <select class="form-select" id="investorSignature">
+                                        <option value="بالانتظار" selected>بالانتظار</option>
+                                        <option value="تم">تم</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">استلام العقد</label>
+                                    <select class="form-select" id="contractReceipt">
+                                        <option value="بالانتظار" selected>بالانتظار</option>
+                                        <option value="تم">تم</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="button" class="btn btn-primary" onclick="saveContract()">حفظ</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal إضافة إعادة بيع -->
+    <div class="modal fade" id="addResaleModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">إضافة دار لإعادة البيع</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addResaleForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">اختر الدار المباعة</label>
+                                    <select class="form-select" id="resaleHouseSelect" required>
+                                        <option value="">اختر الدار</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">المصدر</label>
+                                    <input type="text" class="form-control" id="resaleSource" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">رقم الموبايل</label>
+                                    <input type="tel" class="form-control" id="resaleMobile" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">تاريخ العرض</label>
+                                    <input type="date" class="form-control" id="resaleContactDate" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">المبلغ المطلوب</label>
+                                    <input type="number" class="form-control" id="resaleRemaining">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">عدد الطوابق</label>
+                                    <input type="number" class="form-control" id="resaleFloors" min="1" step="1">
+                                </div>
+                                <!-- <div class="mb-3">
+                                    <label class="form-label">مادة البناء</label>
+                                    <input type="text" class="form-control" id="resaleBuildingMaterial" placeholder="مثل: خرسانة، طابوق، إلخ">
+                                </div> -->
+                                <div class="mb-3">
+                                    <label class="form-label">مواصفات إضافية</label>
+                                    <textarea class="form-control" id="resaleAdditionalSpecs" rows="4"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="button" class="btn btn-primary" onclick="saveResale()">حفظ</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal إدارة الديون والمدفوعات -->
+    <div class="modal fade" id="paymentsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">إدارة الديون والمدفوعات</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h6>معلومات العقد</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>اسم المشتري:</strong> <span id="paymentContractBuyer"></span></p>
+                                    <p><strong>رقم الدار:</strong> <span id="paymentContractHouse"></span></p>
+                                    <p><strong>المبلغ الكلي:</strong> <span id="paymentContractTotal"></span> دينار</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>المبلغ المدفوع:</strong> <span id="paymentContractPaid"></span> دينار</p>
+                                    <p><strong>المبلغ المتبقي:</strong> <span id="paymentContractRemaining" class="text-danger fw-bold"></span> دينار</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h6 class="mb-0">إضافة دفعة جديدة</h6>
+                        </div>
+                        <div class="card-body">
+                            <form id="paymentForm">
+                                <input type="hidden" id="paymentContractId">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label class="form-label">تاريخ الدفعة</label>
+                                            <input type="date" class="form-control" id="paymentDate" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label class="form-label">المبلغ</label>
+                                            <input type="number" class="form-control" id="paymentAmount" step="0.01" min="0.01" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="mb-3">
+                                            <label class="form-label">نوع الدفعة</label>
+                                            <select class="form-select" id="paymentType">
+                                                <option value="دفعة">دفعة</option>
+                                                <option value="مقدمة">مقدمة</option>
+                                                <option value="قسط">قسط</option>
+                                                <option value="دفعة نهائية">دفعة نهائية</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">ملاحظات</label>
+                                    <textarea class="form-control" id="paymentNotes" rows="2"></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-plus-circle"></i> إضافة دفعة
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0">سجل المدفوعات</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive" style="max-height: 50vh; overflow-y: auto;">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>التاريخ</th>
+                                            <th>المبلغ</th>
+                                            <th>النوع</th>
+                                            <th>ملاحظات</th>
+                                            <th>الإجراءات</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="paymentsListBody">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- نموذج الوصل للطباعة -->
+    <div id="receiptPrint" class="d-none">
+        <div style="display: flex; flex-direction: column; width: 100%; gap: 15px; height: 100vh;">
+            <!-- النسخة الأولى -->
+            <div class="receipt-container" style="width: 100%; flex: 1;">
+                <div class="receipt-header">
+                    <h3>وصل قبض مؤقت</h3>
+                </div>
+                <div class="receipt-content">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr>
+                            <td style="width: 50%; padding: 8px; vertical-align: top;">
+                                <p style="margin: 4px 0;"><strong>رقم الوصل:</strong> <span id="printReceiptNumber1"></span></p>
+                                <p style="margin: 4px 0;"><strong>اسم المشتري:</strong> <span id="printBuyerName1"></span></p>
+                                <p style="margin: 4px 0;"><strong>رقم الموبايل:</strong> <span id="printMobileNumber1"></span></p>
+                                <p style="margin: 4px 0;"><strong>رقم الوحدة السكنية:</strong> <span id="printUnitNumber1"></span></p>
+                                <p style="margin: 4px 0;"><strong>مساحة الوحدة السكنية:</strong> <span id="printUnitArea1"></span> م²</p>
+                                <p style="margin: 4px 0;"><strong>المبلغ المستلم:</strong> <span id="printAmountReceived1"></span></p>
+                                <p style="margin: 4px 0;"><strong>المبلغ المتبقي:</strong> <span id="printRemainingAmount1"></span></p>
+                                <p style="margin: 4px 0;"><strong>وذلك عن:</strong> <span id="printPurpose1"></span></p>
+                                <p style="margin: 4px 0;"><strong>ملاحظة:</strong> يعتبر مبلغ الحجز غير قابل للاسترداد</p>
+                                <p style="margin: 12px 0;"><strong>أسم المشتري:</strong></p>
+                                <p style="margin: 15px 0; border-top: 1px solid #000; padding-top: 5px;">&nbsp;</p>
+                                <p style="margin: 8px 0;"><strong>التوقيع:</strong></p>
+                                <p style="margin: 15px 0; border-top: 1px solid #000; padding-top: 5px;">&nbsp;</p>
+                            </td>
+                            <td style="width: 50%; padding: 8px; vertical-align: top;">
+                                <p style="margin: 4px 0;"><strong>التاريخ:</strong> <span id="printDate1"></span></p>
+                                <p style="margin: 4px 0;"><strong>رقم البلوك:</strong> <span id="printBlockNumber1"></span></p>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- النسخة الثانية -->
+            <div class="receipt-container" style="width: 100%; flex: 1;">
+                <div class="receipt-header">
+                    <h3>وصل قبض مؤقت</h3>
+                </div>
+                <div class="receipt-content">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr>
+                            <td style="width: 50%; padding: 8px; vertical-align: top;">
+                                <p style="margin: 4px 0;"><strong>رقم الوصل:</strong> <span id="printReceiptNumber2"></span></p>
+                                <p style="margin: 4px 0;"><strong>اسم المشتري:</strong> <span id="printBuyerName2"></span></p>
+                                <p style="margin: 4px 0;"><strong>رقم الموبايل:</strong> <span id="printMobileNumber2"></span></p>
+                                <p style="margin: 4px 0;"><strong>رقم الوحدة السكنية:</strong> <span id="printUnitNumber2"></span></p>
+                                <p style="margin: 4px 0;"><strong>مساحة الوحدة السكنية:</strong> <span id="printUnitArea2"></span> م²</p>
+                                <p style="margin: 4px 0;"><strong>المبلغ المستلم:</strong> <span id="printAmountReceived2"></span></p>
+                                <p style="margin: 4px 0;"><strong>المبلغ المتبقي:</strong> <span id="printRemainingAmount2"></span></p>
+                                <p style="margin: 4px 0;"><strong>وذلك عن:</strong> <span id="printPurpose2"></span></p>
+                                <p style="margin: 4px 0;"><strong>ملاحظة:</strong> يعتبر مبلغ الحجز غير قابل للاسترداد</p>
+                                <p style="margin: 12px 0;"><strong>أسم المشتري:</strong></p>
+                                <p style="margin: 15px 0; border-top: 1px solid #000; padding-top: 5px;">&nbsp;</p>
+                                <p style="margin: 8px 0;"><strong>التوقيع:</strong></p>
+                                <p style="margin: 15px 0; border-top: 1px solid #000; padding-top: 5px;">&nbsp;</p>
+                            </td>
+                            <td style="width: 50%; padding: 8px; vertical-align: top;">
+                                <p style="margin: 4px 0;"><strong>التاريخ:</strong> <span id="printDate2"></span></p>
+                                <p style="margin: 4px 0;"><strong>رقم البلوك:</strong> <span id="printBlockNumber2"></span></p>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- ملفات قاعدة البيانات والدوال المساعدة -->
+    <script src="database_api.js"></script>
+    <script src="utils.js"></script>
+    <!-- ملفات الوحدات -->
+    <script src="houses.js"></script>
+    <script src="receipts.js"></script>
+    <script src="contracts.js"></script>
+    <script src="payments.js"></script>
+    <script src="analytics.js"></script>
+    <script src="resale.js"></script>
+    <!-- الملف الرئيسي -->
+    <script src="app.js"></script>
+</body>
+</html>
+
