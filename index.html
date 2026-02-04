@@ -80,6 +80,7 @@
                                     <th>القرض</th>
                                     <th>المرحلة</th>
                                     <th>التطلوعة</th>
+                                    <th>عدد الطوابق</th>
                                     <th>مواصفات إضافية</th>
                                     <th>الحالة</th>
                                     <th>الإجراءات</th>
@@ -186,7 +187,7 @@
                                             <div class="col-md-4">
                                                 <div class="mb-3">
                                                     <label class="form-label"><i class="bi bi-currency-dollar"></i> السعر الكلي</label>
-                                                    <input type="number" class="form-control" id="totalPrice" readonly>
+                                                    <input type="number" class="form-control" id="receiptTotalPrice" readonly>
                                                 </div>
                                             </div>
                                             <div class="col-md-4">
@@ -219,6 +220,10 @@
                                         <h6 class="mb-3"><i class="bi bi-sticky"></i> ملاحظات</h6>
                                         <div class="mb-3">
                                             <textarea class="form-control" id="notes" rows="3" placeholder="أضف أي ملاحظات إضافية..."></textarea>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label"><i class="bi bi-person-badge"></i> اسم موظف الحسابات</label>
+                                            <input type="text" class="form-control" id="accountantName" placeholder="أدخل اسم موظف الحسابات">
                                         </div>
                                     </div>
                                 </div>
@@ -476,8 +481,8 @@
                                     <th>رقم البلوك</th>
                                     <th>المرحلة</th>
                                     <th>عدد الطوابق</th>
-                                   
-                                    <th>المساحة (م²)</th>
+                                    <th>المساحة الكلية (م²)</th>
+                                    <th>مساحة البناء (م²)</th>
                                     <th>السعر الكلي</th>
                                     <th>القرض</th>
                                     <th>المبلغ المطلوب</th>
@@ -519,15 +524,15 @@
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">المساحة الكلية (م²)</label>
-                                    <input type="number" class="form-control" id="totalArea" required>
+                                    <input type="number" class="form-control" id="totalArea" step="0.01" min="0" required>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">مساحة البناء (م²)</label>
-                                    <input type="number" class="form-control" id="buildingArea" required>
+                                    <input type="number" class="form-control" id="buildingArea" step="0.01" min="0" required>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">السعر الكلي</label>
-                                    <input type="number" class="form-control" id="totalPrice" required>
+                                    <input type="number" class="form-control" id="totalPrice" step="0.01" min="0" required>
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -552,6 +557,10 @@
                                 <div class="mb-3">
                                     <label class="form-label">التطلوعة (مبلغ مالي)</label>
                                     <input type="number" class="form-control" id="outlook" step="0.01" min="0">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">عدد الطوابق</label>
+                                    <input type="number" class="form-control" id="floors" min="1" step="1">
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">مواصفات إضافية</label>
@@ -846,9 +855,10 @@
     <div id="receiptPrint" class="d-none">
         <div style="display: flex; flex-direction: column; width: 100%; gap: 15px; height: 100vh;">
             <!-- النسخة الأولى -->
-            <div class="receipt-container" style="width: 100%; flex: 1;">
+            <div class="receipt-container" style="width: 100%; flex: 1; background-color: white;">
                 <div class="receipt-header">
-                    <h3>وصل قبض مؤقت</h3>
+                    <h3 style="text-align: center; margin-bottom: 5px;">شركة بيبان</h3>
+                    <h3 style="text-align: center; margin-top: 5px;">وصل قبض مؤقت</h3>
                 </div>
                 <div class="receipt-content">
                     <table style="width: 100%; border-collapse: collapse;">
@@ -857,20 +867,20 @@
                                 <p style="margin: 4px 0;"><strong>رقم الوصل:</strong> <span id="printReceiptNumber1"></span></p>
                                 <p style="margin: 4px 0;"><strong>اسم المشتري:</strong> <span id="printBuyerName1"></span></p>
                                 <p style="margin: 4px 0;"><strong>رقم الموبايل:</strong> <span id="printMobileNumber1"></span></p>
-                                <p style="margin: 4px 0;"><strong>رقم الوحدة السكنية:</strong> <span id="printUnitNumber1"></span></p>
+                                <p style="margin: 4px 0;"><strong>رقم الوحدة السكنية:</strong> <span id="printUnitNumber1"></span> <strong>رقم البلوك:</strong> <span id="printBlockNumber1"></span></p>
                                 <p style="margin: 4px 0;"><strong>مساحة الوحدة السكنية:</strong> <span id="printUnitArea1"></span> م²</p>
                                 <p style="margin: 4px 0;"><strong>المبلغ المستلم:</strong> <span id="printAmountReceived1"></span></p>
                                 <p style="margin: 4px 0;"><strong>المبلغ المتبقي:</strong> <span id="printRemainingAmount1"></span></p>
                                 <p style="margin: 4px 0;"><strong>وذلك عن:</strong> <span id="printPurpose1"></span></p>
                                 <p style="margin: 4px 0;"><strong>ملاحظة:</strong> يعتبر مبلغ الحجز غير قابل للاسترداد</p>
-                                <p style="margin: 12px 0;"><strong>أسم المشتري:</strong></p>
+                                <p style="margin: 12px 0;"><strong>توقيع المشتري:</strong></p>
                                 <p style="margin: 15px 0; border-top: 1px solid #000; padding-top: 5px;">&nbsp;</p>
+                                <p style="margin: 20px 0 8px 0;"><strong>موظف الحسابات:</strong> <span id="printAccountantName1"></span></p>
                                 <p style="margin: 8px 0;"><strong>التوقيع:</strong></p>
                                 <p style="margin: 15px 0; border-top: 1px solid #000; padding-top: 5px;">&nbsp;</p>
                             </td>
                             <td style="width: 50%; padding: 8px; vertical-align: top;">
                                 <p style="margin: 4px 0;"><strong>التاريخ:</strong> <span id="printDate1"></span></p>
-                                <p style="margin: 4px 0;"><strong>رقم البلوك:</strong> <span id="printBlockNumber1"></span></p>
                             </td>
                         </tr>
                     </table>
@@ -878,9 +888,10 @@
             </div>
             
             <!-- النسخة الثانية -->
-            <div class="receipt-container" style="width: 100%; flex: 1;">
+            <div class="receipt-container" style="width: 100%; flex: 1; background-color: white;">
                 <div class="receipt-header">
-                    <h3>وصل قبض مؤقت</h3>
+                    <h3 style="text-align: center; margin-bottom: 5px;">شركة بيبان</h3>
+                    <h3 style="text-align: center; margin-top: 5px;">وصل قبض مؤقت</h3>
                 </div>
                 <div class="receipt-content">
                     <table style="width: 100%; border-collapse: collapse;">
@@ -889,20 +900,20 @@
                                 <p style="margin: 4px 0;"><strong>رقم الوصل:</strong> <span id="printReceiptNumber2"></span></p>
                                 <p style="margin: 4px 0;"><strong>اسم المشتري:</strong> <span id="printBuyerName2"></span></p>
                                 <p style="margin: 4px 0;"><strong>رقم الموبايل:</strong> <span id="printMobileNumber2"></span></p>
-                                <p style="margin: 4px 0;"><strong>رقم الوحدة السكنية:</strong> <span id="printUnitNumber2"></span></p>
+                                <p style="margin: 4px 0;"><strong>رقم الوحدة السكنية:</strong> <span id="printUnitNumber2"></span> <strong>رقم البلوك:</strong> <span id="printBlockNumber2"></span></p>
                                 <p style="margin: 4px 0;"><strong>مساحة الوحدة السكنية:</strong> <span id="printUnitArea2"></span> م²</p>
                                 <p style="margin: 4px 0;"><strong>المبلغ المستلم:</strong> <span id="printAmountReceived2"></span></p>
                                 <p style="margin: 4px 0;"><strong>المبلغ المتبقي:</strong> <span id="printRemainingAmount2"></span></p>
                                 <p style="margin: 4px 0;"><strong>وذلك عن:</strong> <span id="printPurpose2"></span></p>
                                 <p style="margin: 4px 0;"><strong>ملاحظة:</strong> يعتبر مبلغ الحجز غير قابل للاسترداد</p>
-                                <p style="margin: 12px 0;"><strong>أسم المشتري:</strong></p>
+                                <p style="margin: 12px 0;"><strong>توقيع المشتري:</strong></p>
                                 <p style="margin: 15px 0; border-top: 1px solid #000; padding-top: 5px;">&nbsp;</p>
+                                <p style="margin: 20px 0 8px 0;"><strong>موظف الحسابات:</strong> <span id="printAccountantName2"></span></p>
                                 <p style="margin: 8px 0;"><strong>التوقيع:</strong></p>
                                 <p style="margin: 15px 0; border-top: 1px solid #000; padding-top: 5px;">&nbsp;</p>
                             </td>
                             <td style="width: 50%; padding: 8px; vertical-align: top;">
                                 <p style="margin: 4px 0;"><strong>التاريخ:</strong> <span id="printDate2"></span></p>
-                                <p style="margin: 4px 0;"><strong>رقم البلوك:</strong> <span id="printBlockNumber2"></span></p>
                             </td>
                         </tr>
                     </table>

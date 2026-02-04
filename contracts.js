@@ -10,6 +10,11 @@ async function loadContracts() {
     
     tbody.innerHTML = '';
     
+    if (!Array.isArray(contracts)) {
+        console.error('contracts is not an array:', contracts);
+        return;
+    }
+    
     for (let index = 0; index < contracts.length; index++) {
         const contract = contracts[index];
         const remaining = await getRemainingAmount(contract.id);
@@ -44,12 +49,12 @@ async function loadContracts() {
             </td>
         `;
         tbody.appendChild(row);
-    });
+    }
 }
 
 // تحميل المنازل المتوفرة للعقد
-function loadAvailableHousesForContract(currentHouse = null) {
-    const houses = getAllHouses('all', true); // إرجاع جميع المنازل بما فيها المباعة للتعديل
+async function loadAvailableHousesForContract(currentHouse = null) {
+    const houses = await getAllHouses('all', true); // إرجاع جميع المنازل بما فيها المباعة للتعديل
     // في وضع التعديل قد تكون الدار مباعة بالفعل، نضمن ظهورها في القائمة
     if (currentHouse && !houses.some(h => h.house_number === currentHouse.house_number)) {
         houses.push(currentHouse);
@@ -58,6 +63,11 @@ function loadAvailableHousesForContract(currentHouse = null) {
     if (!select) return;
     
     select.innerHTML = '<option value="">اختر الدار</option>';
+    
+    if (!Array.isArray(houses)) {
+        console.error('houses is not an array:', houses);
+        return;
+    }
     
     houses.forEach(house => {
         const option = document.createElement('option');
@@ -115,9 +125,15 @@ function calculateContractRemainingAmount() {
 }
 
 // اقتراح رقم العقد التالي
-function suggestNextContractNumber() {
-    const contracts = getAllContracts();
+async function suggestNextContractNumber() {
+    const contracts = await getAllContracts();
     let maxNumber = 0;
+    
+    if (!Array.isArray(contracts)) {
+        console.error('contracts is not an array:', contracts);
+        return;
+    }
+    
     contracts.forEach(contract => {
         if (contract.contract_number > maxNumber) {
             maxNumber = contract.contract_number;
@@ -130,7 +146,7 @@ function suggestNextContractNumber() {
 }
 
 // حفظ عقد
-function saveContract() {
+async function saveContract() {
     const contractData = {
         saleDate: document.getElementById('saleDate').value,
         houseNumber: parseInt(document.getElementById('contractHouseNumber').value),
@@ -152,26 +168,26 @@ function saveContract() {
     };
     
     if (editingContractId) {
-        const updateResult = updateContract(editingContractId, contractData);
+        const updateResult = await updateContract(editingContractId, contractData);
         if (updateResult.success) {
             alert('تم تحديث العقد بنجاح');
             const modal = bootstrap.Modal.getInstance(document.getElementById('addContractModal'));
             if (modal) modal.hide();
             resetContractForm();
-            loadContracts();
-            loadHouses(); // تحديث قائمة المنازل
+            await loadContracts();
+            await loadHouses(); // تحديث قائمة المنازل
         } else {
             alert('حدث خطأ: ' + updateResult.error);
         }
     } else {
-        const result = addContract(contractData);
+        const result = await addContract(contractData);
         if (result.success) {
             alert('تم حفظ العقد بنجاح');
             const modal = bootstrap.Modal.getInstance(document.getElementById('addContractModal'));
             if (modal) modal.hide();
             resetContractForm();
-            loadContracts();
-            loadHouses(); // تحديث قائمة المنازل
+            await loadContracts();
+            await loadHouses(); // تحديث قائمة المنازل
         } else {
             alert('حدث خطأ: ' + result.error);
         }
@@ -179,8 +195,8 @@ function saveContract() {
 }
 
 // تعديل عقد
-function editContract(id) {
-    const contract = getContractById(id);
+async function editContract(id) {
+    const contract = await getContractById(id);
     if (!contract) {
         alert('العقد غير موجود');
         return;
@@ -220,7 +236,7 @@ function editContract(id) {
 }
 
 // إعادة ضبط نموذج العقد
-function resetContractForm() {
+async function resetContractForm() {
     editingContractId = null;
     document.getElementById('addContractForm').reset();
     document.getElementById('saleDate').valueAsDate = new Date();
@@ -234,8 +250,8 @@ function resetContractForm() {
     if (remainingInput) {
         remainingInput.value = '';
     }
-    suggestNextContractNumber();
-    loadAvailableHousesForContract();
+    await suggestNextContractNumber();
+    await loadAvailableHousesForContract();
     setContractModalLabels(false);
 }
 

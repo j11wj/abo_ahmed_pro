@@ -3,12 +3,17 @@
 // ============================================
 
 // تحميل الوصولات
-function loadReceipts() {
-    const receipts = getAllReceipts();
+async function loadReceipts() {
+    const receipts = await getAllReceipts();
     const tbody = document.getElementById('receiptsListBody');
     if (!tbody) return;
     
     tbody.innerHTML = '';
+    
+    if (!Array.isArray(receipts)) {
+        console.error('receipts is not an array:', receipts);
+        return;
+    }
     
     // تحديث الإحصائيات
     updateReceiptsStats(receipts);
@@ -63,12 +68,17 @@ function updateReceiptsStats(receipts) {
 }
 
 // تحميل المنازل المتوفرة للوصول
-function loadAvailableHousesForReceipt() {
-    const houses = getAllHouses('all', false); // فقط المنازل المتوفرة (غير المباعة)
+async function loadAvailableHousesForReceipt() {
+    const houses = await getAllHouses('all', false); // فقط المنازل المتوفرة (غير المباعة)
     const select = document.getElementById('unitNumber');
     if (!select) return;
     
     select.innerHTML = '<option value="">اختر الوحدة</option>';
+    
+    if (!Array.isArray(houses)) {
+        console.error('houses is not an array:', houses);
+        return;
+    }
     
     houses.forEach(house => {
         const option = document.createElement('option');
@@ -92,7 +102,7 @@ function loadAvailableHousesForReceipt() {
             document.getElementById('blockNumber').value = selectedOption.dataset.blockNumber;
             document.getElementById('unitArea').value = selectedOption.dataset.area;
             const totalPrice = parseFloat(selectedOption.dataset.price) || 0;
-            document.getElementById('totalPrice').value = totalPrice;
+            document.getElementById('receiptTotalPrice').value = totalPrice;
             
             // عرض معلومات الدار
             const houseInfo = document.getElementById('houseInfo');
@@ -109,7 +119,7 @@ function loadAvailableHousesForReceipt() {
             if (houseInfo) {
                 houseInfo.style.display = 'none';
             }
-            document.getElementById('totalPrice').value = '';
+            document.getElementById('receiptTotalPrice').value = '';
             document.getElementById('remainingAmount').value = '';
         }
     });
@@ -126,7 +136,7 @@ function loadAvailableHousesForReceipt() {
 
 // حساب المبلغ المتبقي في الوصل
 function calculateReceiptRemaining() {
-    const totalPrice = parseFloat(document.getElementById('totalPrice').value) || 0;
+    const totalPrice = parseFloat(document.getElementById('receiptTotalPrice').value) || 0;
     const amountReceived = parseFloat(document.getElementById('amountReceived').value) || 0;
     const remaining = totalPrice - amountReceived;
     
@@ -137,10 +147,10 @@ function calculateReceiptRemaining() {
 }
 
 // إعادة تعيين نموذج الوصل
-function resetReceiptForm() {
+async function resetReceiptForm() {
     document.getElementById('receiptForm').reset();
     document.getElementById('receiptDate').valueAsDate = new Date();
-    suggestNextReceiptNumber();
+    await suggestNextReceiptNumber();
     const houseInfo = document.getElementById('houseInfo');
     if (houseInfo) {
         houseInfo.style.display = 'none';
@@ -149,9 +159,15 @@ function resetReceiptForm() {
 }
 
 // اقتراح رقم الوصل التالي
-function suggestNextReceiptNumber() {
-    const receipts = getAllReceipts();
+async function suggestNextReceiptNumber() {
+    const receipts = await getAllReceipts();
     let maxNumber = 0;
+    
+    if (!Array.isArray(receipts)) {
+        console.error('receipts is not an array:', receipts);
+        return;
+    }
+    
     receipts.forEach(receipt => {
         if (receipt.receipt_number > maxNumber) {
             maxNumber = receipt.receipt_number;
@@ -164,46 +180,111 @@ function suggestNextReceiptNumber() {
 }
 
 // حفظ الوصل
-function saveReceipt() {
-    const unitSelect = document.getElementById('unitNumber');
-    const selectedOption = unitSelect.selectedOptions[0];
-    
-    const receiptData = {
-        receiptNumber: parseInt(document.getElementById('receiptNumber').value),
-        receiptDate: document.getElementById('receiptDate').value,
-        buyerName: document.getElementById('buyerName').value,
-        mobileNumber: document.getElementById('mobileNumber').value,
-        unitNumber: parseInt(document.getElementById('unitNumber').value),
-        blockNumber: parseInt(document.getElementById('blockNumber').value),
-        unitArea: parseFloat(document.getElementById('unitArea').value),
-        amountReceived: parseFloat(document.getElementById('amountReceived').value),
-        remainingAmount: parseFloat(document.getElementById('remainingAmount').value),
-        dueDate: document.getElementById('dueDate').value || null,
-        notes: document.getElementById('notes').value,
-        houseId: selectedOption ? parseInt(selectedOption.dataset.houseId) : null
-    };
-    
-    // التحقق من صحة البيانات
-    const totalPrice = parseFloat(document.getElementById('totalPrice').value) || 0;
-    if (totalPrice > 0 && receiptData.amountReceived + receiptData.remainingAmount !== totalPrice) {
-        if (!confirm('المبلغ المستلم + المتبقي لا يساوي السعر الكلي. هل تريد المتابعة؟')) {
+async function saveReceipt() {
+    try {
+        // قراءة الحقول
+        const receiptNumberEl = document.getElementById('receiptNumber');
+        const receiptDateEl = document.getElementById('receiptDate');
+        const buyerNameEl = document.getElementById('buyerName');
+        const mobileNumberEl = document.getElementById('mobileNumber');
+        const unitNumberEl = document.getElementById('unitNumber');
+        const blockNumberEl = document.getElementById('blockNumber');
+        const unitAreaEl = document.getElementById('unitArea');
+        const amountReceivedEl = document.getElementById('amountReceived');
+        const remainingAmountEl = document.getElementById('remainingAmount');
+        const dueDateEl = document.getElementById('dueDate');
+        const notesEl = document.getElementById('notes');
+        
+        // التحقق من وجود الحقول
+        if (!receiptNumberEl || !receiptDateEl || !buyerNameEl || !mobileNumberEl || 
+            !unitNumberEl || !blockNumberEl || !unitAreaEl || !amountReceivedEl || !remainingAmountEl) {
+            alert('خطأ: لم يتم العثور على بعض حقول النموذج');
             return;
         }
-    }
-    
-    const result = addReceipt(receiptData);
-    if (result.success) {
-        alert('تم حفظ الوصل بنجاح وتم تسجيل العقد في موقف العقود');
-        resetReceiptForm();
-        loadReceipts();
-        // تحديث قائمة المنازل لإزالة الدار المباعة من القائمة
-        loadHouses();
-        // تحديث قائمة المنازل المتوفرة للوصولات
-        loadAvailableHousesForReceipt();
-        // تحديث قائمة العقود لإظهار العقد الجديد
-        loadContracts();
-    } else {
-        alert('حدث خطأ: ' + result.error);
+        
+        // قراءة القيم
+        const receiptNumber = parseInt(receiptNumberEl.value);
+        const receiptDate = receiptDateEl.value;
+        const buyerName = buyerNameEl.value.trim();
+        const mobileNumber = mobileNumberEl.value.trim();
+        const unitNumber = parseInt(unitNumberEl.value);
+        const blockNumber = parseInt(blockNumberEl.value);
+        const unitArea = parseFloat(unitAreaEl.value);
+        const amountReceived = parseFloat(amountReceivedEl.value);
+        const remainingAmount = parseFloat(remainingAmountEl.value);
+        const dueDate = dueDateEl ? (dueDateEl.value || null) : null;
+        const notes = notesEl ? notesEl.value.trim() : null;
+        
+        // الحصول على house_id من القائمة المنسدلة
+        const unitSelect = document.getElementById('unitNumber');
+        const selectedOption = unitSelect ? unitSelect.selectedOptions[0] : null;
+        const houseId = selectedOption && selectedOption.dataset.houseId 
+            ? parseInt(selectedOption.dataset.houseId) : null;
+        
+        console.log('Receipt data:', {
+            receiptNumber, receiptDate, buyerName, mobileNumber, unitNumber,
+            blockNumber, unitArea, amountReceived, remainingAmount, houseId
+        });
+        
+        // التحقق من الحقول المطلوبة
+        const invalidFields = [];
+        if (isNaN(receiptNumber) || receiptNumber <= 0) invalidFields.push('رقم الوصل');
+        if (!receiptDate || receiptDate === '') invalidFields.push('التاريخ');
+        if (!buyerName || buyerName === '') invalidFields.push('اسم المشتري');
+        if (!mobileNumber || mobileNumber === '') invalidFields.push('رقم الموبايل');
+        if (isNaN(unitNumber) || unitNumber <= 0) invalidFields.push('رقم الوحدة');
+        if (isNaN(blockNumber) || blockNumber <= 0) invalidFields.push('رقم البلوك');
+        if (isNaN(unitArea) || unitArea <= 0) invalidFields.push('المساحة');
+        if (isNaN(amountReceived) || amountReceived <= 0) invalidFields.push('المبلغ المستلم');
+        if (isNaN(remainingAmount) || remainingAmount < 0) invalidFields.push('المبلغ المتبقي');
+        
+        if (invalidFields.length > 0) {
+            alert('يرجى ملء الحقول التالية بشكل صحيح:\n' + invalidFields.join('\n'));
+            return;
+        }
+        
+        // التحقق من صحة البيانات
+        const totalPrice = parseFloat(document.getElementById('receiptTotalPrice').value) || 0;
+        if (totalPrice > 0 && Math.abs((amountReceived + remainingAmount) - totalPrice) > 0.01) {
+            if (!confirm('المبلغ المستلم + المتبقي لا يساوي السعر الكلي. هل تريد المتابعة؟')) {
+                return;
+            }
+        }
+        
+        const receiptData = {
+            receiptNumber: receiptNumber,
+            receiptDate: receiptDate,
+            buyerName: buyerName,
+            mobileNumber: mobileNumber,
+            unitNumber: unitNumber,
+            blockNumber: blockNumber,
+            unitArea: unitArea,
+            amountReceived: amountReceived,
+            remainingAmount: remainingAmount,
+            dueDate: dueDate,
+            notes: notes,
+            houseId: houseId
+        };
+        
+        console.log('Sending receipt data:', receiptData);
+        const result = await addReceipt(receiptData);
+        
+        if (result.success) {
+            alert('تم حفظ الوصل بنجاح وتم تسجيل العقد في موقف العقود');
+            await resetReceiptForm();
+            await loadReceipts();
+            // تحديث قائمة المنازل لإزالة الدار المباعة من القائمة
+            await loadHouses();
+            // تحديث قائمة المنازل المتوفرة للوصولات
+            await loadAvailableHousesForReceipt();
+            // تحديث قائمة العقود لإظهار العقد الجديد
+            await loadContracts();
+        } else {
+            alert('حدث خطأ: ' + result.error);
+        }
+    } catch (error) {
+        console.error('Error saving receipt:', error);
+        alert('حدث خطأ غير متوقع: ' + error.message);
     }
 }
 
@@ -219,15 +300,16 @@ function printReceipt() {
         unitArea: document.getElementById('unitArea').value,
         amountReceived: document.getElementById('amountReceived').value,
         remainingAmount: document.getElementById('remainingAmount').value,
-        purpose: `مبلغ شراء دار ${document.getElementById('unitNumber').value} بلوك ${document.getElementById('blockNumber').value}`
+        purpose: `مبلغ شراء دار ${document.getElementById('unitNumber').value} بلوك ${document.getElementById('blockNumber').value}`,
+        accountantName: document.getElementById('accountantName') ? document.getElementById('accountantName').value : ''
     };
     
     printReceiptData(receiptData);
 }
 
 // طباعة الوصل بواسطة ID
-function printReceiptById(receiptId) {
-    const receipt = getReceiptById(receiptId);
+async function printReceiptById(receiptId) {
+    const receipt = await getReceiptById(receiptId);
     if (!receipt) {
         alert('الوصول غير موجود');
         return;
@@ -243,7 +325,8 @@ function printReceiptById(receiptId) {
         unitArea: receipt.unit_area,
         amountReceived: receipt.amount_received,
         remainingAmount: receipt.remaining_amount,
-        purpose: `مبلغ شراء دار ${receipt.unit_number} بلوك ${receipt.block_number}`
+        purpose: `مبلغ شراء دار ${receipt.unit_number} بلوك ${receipt.block_number}`,
+        accountantName: '' // يمكن إضافة حقل في قاعدة البيانات لاحقاً
     };
     
     printReceiptData(receiptData);
@@ -262,6 +345,7 @@ function printReceiptData(data) {
     document.getElementById('printAmountReceived1').textContent = formatNumber(data.amountReceived) + ' دينار عراقي';
     document.getElementById('printRemainingAmount1').textContent = formatNumber(data.remainingAmount) + ' دينار عراقي';
     document.getElementById('printPurpose1').textContent = data.purpose;
+    document.getElementById('printAccountantName1').textContent = data.accountantName || '';
     
     // تعبئة النسخة الثانية (نفس البيانات)
     document.getElementById('printReceiptNumber2').textContent = data.receiptNumber;
@@ -274,6 +358,7 @@ function printReceiptData(data) {
     document.getElementById('printAmountReceived2').textContent = formatNumber(data.amountReceived) + ' دينار عراقي';
     document.getElementById('printRemainingAmount2').textContent = formatNumber(data.remainingAmount) + ' دينار عراقي';
     document.getElementById('printPurpose2').textContent = data.purpose;
+    document.getElementById('printAccountantName2').textContent = data.accountantName || '';
     
     // إظهار قسم الطباعة
     document.getElementById('receiptPrint').classList.remove('d-none');
@@ -289,33 +374,33 @@ function printReceiptData(data) {
 }
 
 // عرض الوصل
-function viewReceipt(id) {
-    const receipt = getReceiptById(id);
+async function viewReceipt(id) {
+    const receipt = await getReceiptById(id);
     if (!receipt) {
         alert('الوصول غير موجود');
         return;
     }
     
     // عرض بيانات الوصل في نافذة منبثقة أو طباعته
-    printReceiptById(id);
+    await printReceiptById(id);
 }
 
 // حذف وصل
-function deleteReceiptRecord(receiptId) {
+async function deleteReceiptRecord(receiptId) {
     if (!confirm('هل أنت متأكد من حذف هذا الوصل؟ سيتم حذف العقد المرتبط به أيضاً وتحديث حالة المنزل إلى متوفر.')) {
         return;
     }
     
-    const result = deleteReceipt(receiptId);
+    const result = await deleteReceipt(receiptId);
     if (result.success) {
         alert('تم حذف الوصل بنجاح');
-        loadReceipts();
+        await loadReceipts();
         // تحديث قائمة المنازل
-        loadHouses();
+        await loadHouses();
         // تحديث قائمة المنازل المتوفرة للوصولات
-        loadAvailableHousesForReceipt();
+        await loadAvailableHousesForReceipt();
         // تحديث قائمة العقود
-        loadContracts();
+        await loadContracts();
     } else {
         alert('حدث خطأ: ' + result.error);
     }

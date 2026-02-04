@@ -7,25 +7,41 @@ let monthlyChart = null;
 
 // تحميل التحليلات
 async function loadAnalytics() {
-    const stats = await getStatistics();
-    
-    // تحديث البطاقات
-    document.getElementById('totalSoldHouses').textContent = stats.totalSoldHouses;
-    document.getElementById('monthlySoldHouses').textContent = stats.monthlySoldHouses;
-    document.getElementById('totalRevenue').textContent = formatNumber(stats.totalRevenue) + ' دينار';
-    document.getElementById('monthlyRevenue').textContent = formatNumber(stats.monthlyRevenue) + ' دينار';
-    
-    // تحديث مجموع الديون
-    const totalDebtsElement = document.getElementById('totalDebts');
-    if (totalDebtsElement) {
-        totalDebtsElement.textContent = formatNumber(stats.totalDebts || 0) + ' دينار';
+    try {
+        const stats = await getStatistics();
+        
+        if (!stats) {
+            console.error('No statistics data received');
+            return;
+        }
+        
+        // تحديث البطاقات
+        const totalSoldEl = document.getElementById('totalSoldHouses');
+        const monthlySoldEl = document.getElementById('monthlySoldHouses');
+        const totalRevenueEl = document.getElementById('totalRevenue');
+        const monthlyRevenueEl = document.getElementById('monthlyRevenue');
+        
+        if (totalSoldEl) totalSoldEl.textContent = stats.total_sold_houses || stats.totalSoldHouses || 0;
+        if (monthlySoldEl) monthlySoldEl.textContent = stats.monthly_sold_houses || stats.monthlySoldHouses || 0;
+        if (totalRevenueEl) totalRevenueEl.textContent = formatNumber(stats.total_revenue || stats.totalRevenue || 0) + ' دينار';
+        if (monthlyRevenueEl) monthlyRevenueEl.textContent = formatNumber(stats.monthly_revenue || stats.monthlyRevenue || 0) + ' دينار';
+        
+        // تحديث مجموع الديون
+        const totalDebtsElement = document.getElementById('totalDebts');
+        if (totalDebtsElement) {
+            totalDebtsElement.textContent = formatNumber(stats.total_debts || stats.totalDebts || 0) + ' دينار';
+        }
+        
+        // رسم مخطط المراحل
+        const phaseSales = stats.phase_sales || stats.phaseSales || {};
+        drawPhaseChart(phaseSales);
+        
+        // رسم مخطط المبيعات الشهرية (إذا كان موجوداً)
+        const monthlySalesData = stats.monthlySalesData || [];
+        drawMonthlyChart(monthlySalesData);
+    } catch (error) {
+        console.error('Error loading analytics:', error);
     }
-    
-    // رسم مخطط المراحل
-    drawPhaseChart(stats.phaseSales);
-    
-    // رسم مخطط المبيعات الشهرية
-    drawMonthlyChart(stats.monthlySalesData);
 }
 
 // رسم مخطط المراحل
@@ -37,8 +53,17 @@ function drawPhaseChart(phaseSales) {
         phaseChart.destroy();
     }
     
+    // التحقق من أن phaseSales موجود وصحيح
+    if (!phaseSales || typeof phaseSales !== 'object') {
+        console.warn('phaseSales is not valid:', phaseSales);
+        phaseSales = {};
+    }
+    
     const phases = ['المرحلة الأولى', 'المرحلة الثانية', 'المرحلة الثالثة', 'المرحلة الرابعة', 'المرحلة الخامسة'];
-    const data = [1, 2, 3, 4, 5].map(phase => phaseSales[phase] || 0);
+    const data = [1, 2, 3, 4, 5].map(phase => {
+        const value = phaseSales[phase];
+        return (value !== undefined && value !== null) ? value : 0;
+    });
     
     phaseChart = new Chart(ctx, {
         type: 'doughnut',
@@ -76,8 +101,14 @@ function drawMonthlyChart(monthlyData) {
         monthlyChart.destroy();
     }
     
-    const months = monthlyData.map(d => d.month);
-    const counts = monthlyData.map(d => d.count);
+    // التحقق من أن monthlyData موجود وصحيح
+    if (!Array.isArray(monthlyData) || monthlyData.length === 0) {
+        console.warn('monthlyData is not valid:', monthlyData);
+        monthlyData = [];
+    }
+    
+    const months = monthlyData.map(d => d?.month || '');
+    const counts = monthlyData.map(d => d?.count || 0);
     
     monthlyChart = new Chart(ctx, {
         type: 'bar',

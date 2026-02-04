@@ -3,11 +3,11 @@
 // ============================================
 
 // تحميل إعادة البيع
-function loadResale() {
+async function loadResale() {
     try {
         console.log('Loading resale data...');
-        const resales = getAllResale();
-        console.log('Resales found:', resales.length);
+        const resales = await getAllResale();
+        console.log('Resales found:', resales);
         
         const tbody = document.getElementById('resaleTableBody');
         if (!tbody) {
@@ -17,33 +17,66 @@ function loadResale() {
         
         tbody.innerHTML = '';
         
+        if (!Array.isArray(resales)) {
+            console.error('resales is not an array:', resales);
+            tbody.innerHTML = '<tr><td colspan="16" class="text-center text-danger">خطأ في تحميل البيانات</td></tr>';
+            return;
+        }
+        
         if (resales.length === 0) {
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td colspan="15" class="text-center text-muted">لا توجد بيانات</td>
+                <td colspan="16" class="text-center text-muted">لا توجد بيانات</td>
             `;
             tbody.appendChild(row);
             return;
         }
         
         resales.forEach((resale, index) => {
+            console.log(`Resale ${index + 1}:`, resale);
+            
+            // دالة مساعدة لمعالجة القيم
+            const formatValue = (value, isNumber = false) => {
+                if (value === undefined || value === null || value === '') return '-';
+                if (isNumber && typeof value === 'number') {
+                    return value > 0 ? formatNumber(value) : '-';
+                }
+                return value;
+            };
+            
+            // قراءة جميع البيانات مع معالجة القيم الفارغة
+            const houseNumber = formatValue(resale.house_number);
+            const blockNumber = formatValue(resale.block_number);
+            const phase = formatValue(resale.phase);
+            const floors = formatValue(resale.floors);
+            const totalArea = formatValue(resale.total_area, true);
+            const buildingArea = formatValue(resale.building_area, true);
+            const totalPrice = formatValue(resale.total_price, true);
+            const loanAmount = formatValue(resale.loan_amount, true);
+            const remainingAmount = formatValue(resale.remaining_amount, true);
+            const source = resale.source || '-';
+            const mobileNumber = resale.mobile_number || '-';
+            const contactDate = resale.contact_date ? formatDate(resale.contact_date) : '-';
+            const additionalSpecs = resale.additional_specs || '-';
+            
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${index + 1}</td>
-                <td>${resale.house_number || '-'}</td>
-                <td>${resale.block_number || '-'}</td>
-                <td><span class="badge bg-info">المرحلة ${resale.phase || '-'}</span></td>
-                <td>${resale.floors || '-'}</td>
-                <td>${resale.building_area || '-'}</td>
-                <td>${resale.total_price ? formatNumber(resale.total_price) : '-'}</td>
-                <td>${resale.loan_amount ? formatNumber(resale.loan_amount) : '-'}</td>
-                <td>${resale.remaining_amount ? formatNumber(resale.remaining_amount) : '-'}</td>
-                <td>${resale.source || '-'}</td>
-                <td>${resale.mobile_number || '-'}</td>
-                <td>${resale.contact_date ? formatDate(resale.contact_date) : '-'}</td>
-                <td>${resale.additional_specs || '-'}</td>
+                <td><strong>${houseNumber}</strong></td>
+                <td><strong>${blockNumber}</strong></td>
+                <td><span class="badge bg-info">المرحلة ${phase}</span></td>
+                <td>${floors}</td>
+                <td>${totalArea !== '-' ? totalArea + ' م²' : '-'}</td>
+                <td>${buildingArea !== '-' ? buildingArea + ' م²' : '-'}</td>
+                <td>${totalPrice !== '-' ? totalPrice + ' دينار' : '-'}</td>
+                <td>${loanAmount !== '-' ? loanAmount + ' دينار' : '-'}</td>
+                <td><strong class="text-primary">${remainingAmount !== '-' ? remainingAmount + ' دينار' : '-'}</strong></td>
+                <td>${source}</td>
+                <td>${mobileNumber}</td>
+                <td>${contactDate}</td>
+                <td>${additionalSpecs}</td>
                 <td>
-                    <button class="btn btn-sm btn-danger" onclick="deleteResaleRecord(${resale.id})">
+                    <button class="btn btn-sm btn-danger" onclick="deleteResaleRecord(${resale.id})" title="حذف">
                         <i class="bi bi-trash"></i>
                     </button>
                 </td>
@@ -56,21 +89,33 @@ function loadResale() {
 }
 
 // تحميل المنازل المباعة لإعادة البيع
-function loadSoldHousesForResale() {
+async function loadSoldHousesForResale() {
     try {
         console.log('Loading sold houses for resale...');
-        const soldHouses = getSoldHouses();
-        console.log('Sold houses found:', soldHouses.length);
+        const soldHouses = await getSoldHouses();
+        console.log('Sold houses API response:', soldHouses);
+        console.log('Type:', typeof soldHouses, 'Is Array:', Array.isArray(soldHouses));
         
         const select = document.getElementById('resaleHouseSelect');
         if (!select) {
-            console.error('resaleHouseSelect not found');
+            console.error('resaleHouseSelect element not found');
             return;
         }
         
         select.innerHTML = '<option value="">اختر الدار</option>';
         
+        if (!Array.isArray(soldHouses)) {
+            console.error('soldHouses is not an array:', soldHouses);
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = 'خطأ في تحميل البيانات';
+            option.disabled = true;
+            select.appendChild(option);
+            return;
+        }
+        
         if (soldHouses.length === 0) {
+            console.log('No sold houses found');
             const option = document.createElement('option');
             option.value = '';
             option.textContent = 'لا توجد منازل مباعة';
@@ -79,12 +124,16 @@ function loadSoldHousesForResale() {
             return;
         }
         
-        soldHouses.forEach(house => {
+        console.log(`Adding ${soldHouses.length} sold houses to select`);
+        soldHouses.forEach((house, index) => {
+            console.log(`House ${index + 1}:`, house);
             const option = document.createElement('option');
             option.value = house.id;
             option.textContent = `دار ${house.house_number || ''} - بلوك ${house.block_number || ''} - المشتري: ${house.buyer_name || ''}`;
             select.appendChild(option);
         });
+        
+        console.log('Successfully loaded sold houses');
         
         // إزالة المستمعات السابقة لتجنب التكرار
         const newSelect = select.cloneNode(true);
@@ -109,23 +158,28 @@ function loadSoldHousesForResale() {
 }
 
 // جلب تفاصيل الدار من العقد المرتبط
-function loadHouseDetailsForResale(houseId) {
+async function loadHouseDetailsForResale(houseId) {
     try {
         // جلب العقد المرتبط بالدار
-        const contracts = getAllContracts();
-        const contract = contracts.find(c => c.house_id === houseId);
-        
-        if (contract) {
-            // تعبئة عدد الطوابق من العقد
-            if (contract.floors) {
-                document.getElementById('resaleFloors').value = contract.floors;
+        const contracts = await getAllContracts();
+        if (Array.isArray(contracts)) {
+            const contract = contracts.find(c => c.house_id === houseId);
+            
+            if (contract) {
+                // تعبئة عدد الطوابق من العقد
+                if (contract.floors) {
+                    document.getElementById('resaleFloors').value = contract.floors;
+                }
             }
         }
         
         // جلب مادة البناء من جدول houses إذا كانت موجودة
-        const house = getHouseById(houseId);
+        const house = await getHouseById(houseId);
         if (house && house.building_material) {
-            document.getElementById('resaleBuildingMaterial').value = house.building_material;
+            const materialField = document.getElementById('resaleBuildingMaterial');
+            if (materialField) {
+                materialField.value = house.building_material;
+            }
         }
     } catch (error) {
         console.error('Error loading house details:', error);
@@ -133,7 +187,7 @@ function loadHouseDetailsForResale(houseId) {
 }
 
 // حفظ إعادة بيع
-function saveResale() {
+async function saveResale() {
     try {
         const houseSelect = document.getElementById('resaleHouseSelect');
         const source = document.getElementById('resaleSource');
@@ -179,7 +233,7 @@ function saveResale() {
         
         console.log('Saving resale data:', resaleData);
         
-        const result = addResale(resaleData);
+        const result = await addResale(resaleData);
         if (result && result.success) {
             alert('تم إضافة الدار لقسم إعادة البيع بنجاح');
             const modal = bootstrap.Modal.getInstance(document.getElementById('addResaleModal'));
@@ -190,7 +244,7 @@ function saveResale() {
             if (form) {
                 form.reset();
             }
-            loadResale();
+            await loadResale();
         } else {
             alert('حدث خطأ: ' + (result?.error || 'خطأ غير معروف'));
             console.error('Error saving resale:', result);
@@ -202,12 +256,12 @@ function saveResale() {
 }
 
 // حذف سجل إعادة بيع
-function deleteResaleRecord(id) {
+async function deleteResaleRecord(id) {
     if (confirm('هل أنت متأكد من حذف هذا السجل؟')) {
-        const result = deleteResale(id);
+        const result = await deleteResale(id);
         if (result.success) {
             alert('تم الحذف بنجاح');
-            loadResale();
+            await loadResale();
         } else {
             alert('حدث خطأ: ' + result.error);
         }

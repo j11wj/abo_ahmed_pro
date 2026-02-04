@@ -122,6 +122,14 @@ class ResaleCreate(ResaleBase):
 class ResaleResponse(ResaleBase):
     id: int
     created_at: datetime
+    # معلومات المنزل
+    house_number: Optional[int] = None
+    block_number: Optional[int] = None
+    phase: Optional[int] = None
+    building_area: Optional[float] = None
+    total_price: Optional[float] = None
+    loan_amount: Optional[float] = None
+    outlook: Optional[float] = None
     
     class Config:
         from_attributes = True
@@ -318,6 +326,34 @@ def get_contracts(db: Session = Depends(get_db)):
     """الحصول على جميع العقود"""
     return db.query(Contract).order_by(Contract.sale_date.desc()).all()
 
+@app.get("/api/contracts/sold-houses")
+def get_sold_houses(db: Session = Depends(get_db)):
+    """الحصول على المنازل المباعة"""
+    contracts = db.query(Contract).filter(Contract.house_id.isnot(None)).all()
+    house_ids = set()
+    sold_houses = []
+    
+    for contract in contracts:
+        if contract.house_id and contract.house_id not in house_ids:
+            house_ids.add(contract.house_id)
+            house = db.query(House).filter(House.id == contract.house_id).first()
+            if house:
+                house_dict = {
+                    "id": house.id,
+                    "house_number": house.house_number,
+                    "block_number": house.block_number,
+                    "phase": house.phase,
+                    "building_area": house.building_area,
+                    "total_price": house.total_price,
+                    "loan_amount": house.loan_amount,
+                    "buyer_name": contract.buyer_name,
+                    "contract_date": contract.contract_date,
+                    "contract_number": contract.contract_number
+                }
+                sold_houses.append(house_dict)
+    
+    return sold_houses
+
 @app.get("/api/contracts/{contract_id}", response_model=ContractResponse)
 def get_contract(contract_id: int, db: Session = Depends(get_db)):
     """الحصول على عقد محدد"""
@@ -391,44 +427,18 @@ def update_contract(contract_id: int, contract: ContractCreate, db: Session = De
     db.refresh(db_contract)
     return db_contract
 
-@app.get("/api/contracts/sold-houses")
-def get_sold_houses(db: Session = Depends(get_db)):
-    """الحصول على المنازل المباعة"""
-    contracts = db.query(Contract).filter(Contract.house_id.isnot(None)).all()
-    house_ids = set()
-    sold_houses = []
-    
-    for contract in contracts:
-        if contract.house_id and contract.house_id not in house_ids:
-            house_ids.add(contract.house_id)
-            house = db.query(House).filter(House.id == contract.house_id).first()
-            if house:
-                house_dict = {
-                    "id": house.id,
-                    "house_number": house.house_number,
-                    "block_number": house.block_number,
-                    "phase": house.phase,
-                    "building_area": house.building_area,
-                    "total_price": house.total_price,
-                    "loan_amount": house.loan_amount,
-                    "buyer_name": contract.buyer_name,
-                    "contract_date": contract.contract_date,
-                    "contract_number": contract.contract_number
-                }
-                sold_houses.append(house_dict)
-    
-    return sold_houses
-
-
 # ==================== Resale Endpoints ====================
 
-@app.get("/api/resale", response_model=List[ResaleResponse])
+@app.get("/api/resale")
 def get_resales(db: Session = Depends(get_db)):
     """الحصول على جميع إعادة البيع"""
     resales = db.query(Resale).order_by(Resale.contact_date.desc()).all()
     result = []
     for resale in resales:
+        # جلب المنزل حتى لو كان محذوفاً (status='deleted')
         house = db.query(House).filter(House.id == resale.house_id).first()
+        
+        # إنشاء القاموس الأساسي
         resale_dict = {
             "id": resale.id,
             "house_id": resale.house_id,
@@ -441,20 +451,43 @@ def get_resales(db: Session = Depends(get_db)):
             "additional_specs": resale.additional_specs,
             "created_at": resale.created_at
         }
+        
+        # إضافة معلومات المنزل إذا كان موجوداً
         if house:
-            resale_dict.update({
-                "house_number": house.house_number,
-                "block_number": house.block_number,
-                "phase": house.phase,
-                "building_area": house.building_area,
-                "total_price": house.total_price,
-                "loan_amount": house.loan_amount,
-                "outlook": house.outlook
-            })
+            resale_dict["house_number"] = house.house_number
+            resale_dict["block_number"] = house.block_number
+            resale_dict["phase"] = house.phase
+            resale_dict["total_area"] = house.total_area
+            resale_dict["building_area"] = house.building_area
+            resale_dict["total_price"] = house.total_price
+            resale_dict["loan_amount"] = house.loan_amount
+            resale_dict["outlook"] = house.outlook
+        else:
+            # إذا لم يكن المنزل موجوداً، جرب جلب المعلومات من العقد
+            contract = db.query(Contract).filter(Contract.house_id == resale.house_id).first()
+            if contract:
+                resale_dict["house_number"] = contract.house_number
+                resale_dict["block_number"] = contract.block_number
+                resale_dict["phase"] = None  # لا يوجد phase في العقد
+                resale_dict["building_area"] = contract.area
+                resale_dict["total_price"] = contract.total_amount
+                resale_dict["loan_amount"] = contract.loan_amount
+                resale_dict["outlook"] = None
+            else:
+                # إذا لم يكن هناك منزل ولا عقد، ضع قيم None
+                resale_dict["house_number"] = None
+                resale_dict["block_number"] = None
+                resale_dict["phase"] = None
+                resale_dict["total_area"] = None
+                resale_dict["building_area"] = None
+                resale_dict["total_price"] = None
+                resale_dict["loan_amount"] = None
+                resale_dict["outlook"] = None
+        
         result.append(resale_dict)
     return result
 
-@app.post("/api/resale", response_model=ResaleResponse)
+@app.post("/api/resale")
 def create_resale(resale: ResaleCreate, db: Session = Depends(get_db)):
     """إضافة إعادة بيع"""
     # التحقق من وجود المنزل
@@ -466,7 +499,28 @@ def create_resale(resale: ResaleCreate, db: Session = Depends(get_db)):
     db.add(db_resale)
     db.commit()
     db.refresh(db_resale)
-    return db_resale
+    
+    # إرجاع البيانات مع معلومات المنزل
+    result = {
+        "id": db_resale.id,
+        "house_id": db_resale.house_id,
+        "source": db_resale.source,
+        "mobile_number": db_resale.mobile_number,
+        "contact_date": db_resale.contact_date,
+        "remaining_amount": db_resale.remaining_amount,
+        "floors": db_resale.floors,
+        "building_material": db_resale.building_material,
+        "additional_specs": db_resale.additional_specs,
+        "created_at": db_resale.created_at,
+        "house_number": house.house_number,
+        "block_number": house.block_number,
+        "phase": house.phase,
+        "building_area": house.building_area,
+        "total_price": house.total_price,
+        "loan_amount": house.loan_amount,
+        "outlook": house.outlook
+    }
+    return result
 
 @app.delete("/api/resale/{resale_id}")
 def delete_resale(resale_id: int, db: Session = Depends(get_db)):

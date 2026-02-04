@@ -21,11 +21,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     
     // تحميل البيانات الأولية
-        if (typeof loadHouses === 'function') loadHouses();
-        if (typeof loadReceipts === 'function') loadReceipts();
-        if (typeof loadContracts === 'function') loadContracts();
-        if (typeof loadResale === 'function') loadResale();
-        if (typeof loadAnalytics === 'function') loadAnalytics();
+        if (typeof loadHouses === 'function') await loadHouses();
+        if (typeof loadReceipts === 'function') await loadReceipts();
+        if (typeof loadContracts === 'function') await loadContracts();
+        if (typeof loadResale === 'function') await loadResale();
+        if (typeof loadAnalytics === 'function') await loadAnalytics();
     
     // إعداد النماذج
     setupForms();
@@ -68,7 +68,7 @@ function setupNavigation() {
 }
 
 // عرض قسم معين
-function showSection(sectionName) {
+async function showSection(sectionName) {
     if (!sectionName) {
         console.error('showSection: sectionName is required');
         return;
@@ -88,22 +88,22 @@ function showSection(sectionName) {
         // تحديث البيانات عند فتح القسم
         try {
             if (sectionName === 'houses' && typeof loadHouses === 'function') {
-            loadHouses();
-        } else if (sectionName === 'receipts') {
-                if (typeof loadReceipts === 'function') loadReceipts();
-                if (typeof loadAvailableHousesForReceipt === 'function') loadAvailableHousesForReceipt();
-                if (typeof suggestNextReceiptNumber === 'function') suggestNextReceiptNumber();
-        } else if (sectionName === 'contracts') {
-                if (typeof loadContracts === 'function') loadContracts();
-                if (typeof loadAvailableHousesForContract === 'function') loadAvailableHousesForContract();
-                if (typeof suggestNextContractNumber === 'function') suggestNextContractNumber();
+                await loadHouses();
+            } else if (sectionName === 'receipts') {
+                if (typeof loadReceipts === 'function') await loadReceipts();
+                if (typeof loadAvailableHousesForReceipt === 'function') await loadAvailableHousesForReceipt();
+                if (typeof suggestNextReceiptNumber === 'function') await suggestNextReceiptNumber();
+            } else if (sectionName === 'contracts') {
+                if (typeof loadContracts === 'function') await loadContracts();
+                if (typeof loadAvailableHousesForContract === 'function') await loadAvailableHousesForContract();
+                if (typeof suggestNextContractNumber === 'function') await suggestNextContractNumber();
             } else if (sectionName === 'analytics' && typeof loadAnalytics === 'function') {
-            loadAnalytics();
-        } else if (sectionName === 'resale') {
-                if (typeof loadResale === 'function') loadResale();
-                if (typeof loadSoldHousesForResale === 'function') loadSoldHousesForResale();
+                await loadAnalytics();
+            } else if (sectionName === 'resale') {
+                if (typeof loadResale === 'function') await loadResale();
+                if (typeof loadSoldHousesForResale === 'function') await loadSoldHousesForResale();
             } else if (sectionName === 'debts' && typeof loadDebts === 'function') {
-                loadDebts();
+                await loadDebts();
             }
         } catch (error) {
             console.error('Error loading section data:', error);
@@ -130,6 +130,16 @@ function setupModalReset() {
                 document.getElementById('buyerSignature').value = 'بالانتظار';
                 document.getElementById('investorSignature').value = 'بالانتظار';
                 document.getElementById('contractReceipt').value = 'بالانتظار';
+            }
+        });
+    }
+    
+    // تحميل المنازل المباعة عند فتح نموذج إعادة البيع
+    const resaleModalEl = document.getElementById('addResaleModal');
+    if (resaleModalEl) {
+        resaleModalEl.addEventListener('show.bs.modal', async () => {
+            if (typeof loadSoldHousesForResale === 'function') {
+                await loadSoldHousesForResale();
             }
         });
     }

@@ -2,7 +2,7 @@
 // API Client للاتصال بالـ Backend
 // ============================================
 
-const API_BASE_URL = 'http://localhost:8000/api';
+const API_BASE_URL = 'http://localhost:8001/api';
 
 // دالة مساعدة للطلبات
 async function apiRequest(method, endpoint, data = null) {
@@ -21,8 +21,23 @@ async function apiRequest(method, endpoint, data = null) {
         const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
         
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.detail || 'حدث خطأ في الطلب');
+            let errorMessage = 'حدث خطأ في الطلب';
+            try {
+                const error = await response.json();
+                // معالجة أخطاء FastAPI validation
+                if (error.detail && Array.isArray(error.detail)) {
+                    const validationErrors = error.detail.map(err => {
+                        const field = err.loc ? err.loc.join('.') : 'field';
+                        return `${field}: ${err.msg}`;
+                    }).join(', ');
+                    errorMessage = `خطأ في التحقق من البيانات: ${validationErrors}`;
+                } else {
+                    errorMessage = error.detail || error.message || JSON.stringify(error);
+                }
+            } catch (e) {
+                errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+            }
+            throw new Error(errorMessage);
         }
         
         return await response.json();
@@ -58,6 +73,7 @@ async function getHouseById(id) {
 
 async function addHouse(houseData) {
     try {
+        // البيانات يجب أن تكون محققة مسبقاً في saveHouse
         const data = {
             house_number: houseData.houseNumber,
             block_number: houseData.blockNumber,
@@ -69,17 +85,22 @@ async function addHouse(houseData) {
             phase: houseData.phase,
             outlook: houseData.outlook || null,
             additional_specs: houseData.additionalSpecs || null,
-            floors: null,
+            floors: houseData.floors || null,
             building_material: null
         };
-        return { success: true, ...await apiRequest('POST', '/houses', data) };
+        
+        console.log('Sending house data to API:', data);
+        const result = await apiRequest('POST', '/houses', data);
+        return { success: true, ...result };
     } catch (error) {
+        console.error('Error adding house:', error);
         return { success: false, error: error.message };
     }
 }
 
 async function updateHouse(id, houseData) {
     try {
+        // البيانات يجب أن تكون محققة مسبقاً في saveHouse
         const data = {
             house_number: houseData.houseNumber,
             block_number: houseData.blockNumber,
@@ -91,12 +112,15 @@ async function updateHouse(id, houseData) {
             phase: houseData.phase,
             outlook: houseData.outlook || null,
             additional_specs: houseData.additionalSpecs || null,
-            floors: null,
+            floors: houseData.floors || null,
             building_material: null
         };
-        await apiRequest('PUT', `/houses/${id}`, data);
-        return { success: true };
+        
+        console.log('Updating house with data:', data);
+        const result = await apiRequest('PUT', `/houses/${id}`, data);
+        return { success: true, ...result };
     } catch (error) {
+        console.error('Error updating house:', error);
         return { success: false, error: error.message };
     }
 }
@@ -157,9 +181,11 @@ async function addReceipt(receiptData) {
             notes: receiptData.notes || null,
             house_id: receiptData.houseId || null
         };
-        await apiRequest('POST', '/receipts', data);
-        return { success: true };
+        console.log('Sending receipt data to API:', data);
+        const result = await apiRequest('POST', '/receipts', data);
+        return { success: true, ...result };
     } catch (error) {
+        console.error('Error adding receipt:', error);
         return { success: false, error: error.message };
     }
 }
@@ -295,9 +321,12 @@ async function addResale(resaleData) {
             building_material: resaleData.buildingMaterial || null,
             additional_specs: resaleData.additionalSpecs || null
         };
-        await apiRequest('POST', '/resale', data);
-        return { success: true };
+        console.log('Sending resale data to API:', data);
+        const result = await apiRequest('POST', '/resale', data);
+        console.log('Resale created successfully:', result);
+        return { success: true, data: result };
     } catch (error) {
+        console.error('Error adding resale:', error);
         return { success: false, error: error.message };
     }
 }
@@ -483,7 +512,7 @@ async function searchContractsByBuyer(searchTerm) {
 // دالة للتحقق من اتصال الـ API
 async function checkApiConnection() {
     try {
-        const response = await fetch('http://localhost:8000/health');
+        const response = await fetch('http://localhost:8001/health');
         return response.ok;
     } catch (error) {
         return false;
@@ -494,8 +523,8 @@ async function checkApiConnection() {
 async function initDatabase() {
     const isConnected = await checkApiConnection();
     if (!isConnected) {
-        console.error('Cannot connect to API. Make sure the backend server is running on http://localhost:8000');
-        alert('لا يمكن الاتصال بالخادم. يرجى التأكد من تشغيل الخادم على http://localhost:8000');
+        console.error('Cannot connect to API. Make sure the backend server is running on http://localhost:8001');
+        alert('لا يمكن الاتصال بالخادم. يرجى التأكد من تشغيل الخادم على http://localhost:8001');
         return false;
     }
     return true;
