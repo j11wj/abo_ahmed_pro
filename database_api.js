@@ -2,7 +2,7 @@
 // API Client للاتصال بالـ Backend
 // ============================================
 
-const API_BASE_URL = 'http://localhost:8001/api';
+const API_BASE_URL = 'http://72.62.53.138:8001/api'
 
 // دالة مساعدة للطلبات
 async function apiRequest(method, endpoint, data = null) {
